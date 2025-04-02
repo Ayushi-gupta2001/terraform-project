@@ -11,16 +11,17 @@
 /* Fetching the ubuntu AMI using data source block */
 data "aws_ami" "ec2_ubuntu" {
   most_recent = true
-  owners      = ["amazon"]
   filter {
     name   = "name"
-    values = ["ubuntu/images/hvm-ssd/ubuntu-jammy-22.04-amd64-*"]
+    values = ["ubuntu/images/hvm-ssd/ubuntu-focal-20.04-amd64-server-*"]
   }
 
   filter {
     name   = "virtualization-type"
     values = ["hvm"]
   }
+
+  owners = ["099720109477"]
 }
 
 /* 
@@ -115,7 +116,7 @@ resource "aws_route_table" "public_route_table" {
   vpc_id = aws_vpc.test_vpc.id
 
   route {
-    cidr_block = "0.0.0.0/24"
+    cidr_block = "0.0.0.0/0"
     gateway_id = aws_internet_gateway.test_internet_gateway.id
   }
 
@@ -157,11 +158,14 @@ resource "aws_security_group" "security_group_for_traffic" {
     protocol    = "-1"
     cidr_blocks = ["0.0.0.0/0"]
   }
+
   ingress {
-    from_port   = "22"  // from_port = 0 meaning all the ports like 80, 443, 21, 22 , same for to_port 
-    to_port     = "22"  // if from_port = 80 and to_port = 80 meaning allowing only http port and protocal will be "tcp"
-    protocol    = "tcp" // allow all the protocols like tcp, udp, icmp or others
-    cidr_blocks = ["0.0.0.0/0"]
+    cidr_blocks = [
+      "0.0.0.0/0"
+    ]
+    from_port = 22    // from_port = 0 meaning all the ports like 80, 443, 21, 22 , same for to_port 
+    to_port   = 22    // if from_port = 80 and to_port = 80 meaning allowing only http port and protocal will be "tcp"
+    protocol  = "tcp" // allow all the protocols like tcp, udp, icmp or others
   }
 }
 
@@ -170,7 +174,7 @@ resource "aws_security_group" "security_group_for_traffic" {
 */
 
 resource "aws_instance" "test_instance" {
-  key_name                    = aws_key_pair.dummy_public_key.key_name
+  key_name                    = "MyEC2InstanceLoginKey"
   ami                         = data.aws_ami.ec2_ubuntu.id
   subnet_id                   = aws_subnet.public_test_subnet.id
   vpc_security_group_ids      = [aws_security_group.security_group_for_traffic.id]
