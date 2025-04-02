@@ -1,4 +1,4 @@
-## Project - 1: Creating AWS EC2 server using the terraform:
+## Hosting the web application on AWS EC2 server using the terraform with custom VPC:
 
 ### Setup required :
 
@@ -7,6 +7,7 @@
 
 ### Steps :
 
+### Terraform installation
 1. Provide the terraform provider , here we are using "aws" provider. For reference , how to use the aws provider check this link 👉 : https://registry.terraform.io/providers/hashicorp/aws/latest/docs
 
 2. You can use this below images as well for more clarity: 
