@@ -144,7 +144,7 @@ resource "aws_route_table_association" "pubic_subnet_route_table_association" {
 */
 
 resource "aws_security_group" "security_group_for_traffic" {
-  name        = "allow_ssh"
+  name        = "allow_traffic"
   description = "Allow inbound and outbound trafic"
   vpc_id      = aws_vpc.test_vpc.id
 
@@ -160,12 +160,31 @@ resource "aws_security_group" "security_group_for_traffic" {
   }
 
   ingress {
+    description = "allow ssh"
     cidr_blocks = [
       "0.0.0.0/0"
     ]
     from_port = 22    // from_port = 0 meaning all the ports like 80, 443, 21, 22 , same for to_port 
     to_port   = 22    // if from_port = 80 and to_port = 80 meaning allowing only http port and protocal will be "tcp"
     protocol  = "tcp" // allow all the protocols like tcp, udp, icmp or others
+  }
+  ingress {
+    description = "allow http"
+    cidr_blocks = [
+      "0.0.0.0/0"
+    ]
+    from_port = 80
+    to_port   = 80
+    protocol  = "tcp"
+  }
+  ingress {
+    description = "allow https"
+    cidr_blocks = [
+      "0.0.0.0/0"
+    ]
+    from_port = 443
+    to_port   = 443
+    protocol  = "tcp"
   }
 }
 
@@ -174,12 +193,36 @@ resource "aws_security_group" "security_group_for_traffic" {
 */
 
 resource "aws_instance" "test_instance" {
-  key_name                    = "MyEC2InstanceLoginKey"
+  key_name                    = var.key_pair_name
   ami                         = data.aws_ami.ec2_ubuntu.id
   subnet_id                   = aws_subnet.public_test_subnet.id
   vpc_security_group_ids      = [aws_security_group.security_group_for_traffic.id]
   instance_type               = var.instance_type
   associate_public_ip_address = true
+  connection {    /* require for the remote-exec provisioner even if you have enabled the ssh into the firewall */
+    type = "ssh"
+    user = "ubuntu"
+    private_key = file(local_file.storing_private_key_in_local_system.filename)  // using file block we can read the content of the file
+    host = self.public_ip
+  }
+
+  provisioner "local-exec" {
+    command = "chmod 400 ${local_file.storing_private_key_in_local_system.filename}"
+  }
+
+  provisioner "remote-exec" {
+    inline = [
+      "sudo apt-get update",
+      "sudo apt install apache2 -y",
+      "sudo systemctl start apache2"
+    ]
+  }
+
+  provisioner "file" {
+    source      = "file-exe.txt"
+    destination = "/tmp/file-exe.txt"
+
+  }
 
   tags = {
     Name = "First-EC2-Server-using-Terraform"
@@ -187,3 +230,15 @@ resource "aws_instance" "test_instance" {
 }
 
 
+/*
+
+  using the module block from the module folder
+
+module "module" {
+  source          = "./module"
+  ami             = data.aws_ami.ec2_ubuntu.id
+  subnet_id       = aws_subnet.public_test_subnet
+  security_groups = aws_security_group.security_group_for_traffic
+}
+
+*/

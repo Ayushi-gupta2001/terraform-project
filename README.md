@@ -30,6 +30,7 @@
 
     ***/
 
-8. 
+8. provisioner blocks needs to embeeded into resource block, they can't be define on their own
+9. The remote-exec provisioner invokes a script on a remote resource after it is created. 
 
 
